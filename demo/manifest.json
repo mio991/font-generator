@@ -1,0 +1,10 @@
+{
+    "name": "Test Font",
+    "glyphs": [
+        {
+            "start": "o",
+            "end": "o",
+            "file": "./demo/o.svg"
+        }
+    ]
+}
