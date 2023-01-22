@@ -68,7 +68,40 @@ fn main() -> Result<(), Error> {
 
     let mut document = Document {
         sfnt_version: SFNTVersion::OpenType,
-        tables: vec![Box::new(svg), Box::new(cmap)],
+        tables: vec![
+            Box::new(svg),
+            Box::new(cmap),
+            Box::new(OS2 {
+                avg_glyph_width: 100,
+                weight_class: 400,
+                width_class: 5,
+                subscript: Script {
+                    x_size: 60,
+                    y_size: 60,
+                    x_offset: 5,
+                    y_offset: 40,
+                },
+                superscript: Script {
+                    x_size: 60,
+                    y_size: 60,
+                    x_offset: 5,
+                    y_offset: -40,
+                },
+                strikeout_size: 10,
+                strikeout_position: 45,
+                panose: Panose::default(),
+                typo_ascender: 20,
+                typo_descender: 30,
+                typo_line_gap: 120,
+                win_ascent: 60,
+                win_descent: 80,
+                x_height: 60,
+                cap_height: 80,
+                default_cahr: 0,
+                break_char: ' ' as u16,
+                max_context: 1,
+            }),
+        ],
     };
 
     let path = env::args().nth(2).unwrap_or("./out.otf".to_string());

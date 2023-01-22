@@ -1,5 +1,3 @@
-use std::fs::File;
-
 use byteorder::{WriteBytesExt, BE};
 
 use super::super::{Tag, WriteError};
