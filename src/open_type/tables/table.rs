@@ -15,9 +15,9 @@ impl dyn Table {
         self.store_internal(&mut buffer)?;
 
         writer.write_all(&self.get_tag())?;
-        writer.write_u32::<BE>(0);
-        writer.write_u32::<BE>(offset);
-        writer.write_u32::<BE>(buffer.len() as u32);
+        writer.write_u32::<BE>(0)?;
+        writer.write_u32::<BE>(offset)?;
+        writer.write_u32::<BE>(buffer.len() as u32)?;
 
         return Ok(buffer);
     }

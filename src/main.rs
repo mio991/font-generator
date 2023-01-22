@@ -11,32 +11,32 @@ mod manifest;
 mod open_type;
 
 #[derive(Debug)]
-enum Error {
+enum ProgrammError {
     FileError(io::Error),
     ParseError(serde_json::Error),
     MissingArgument(String),
     WriteError(WriteError),
 }
 
-impl From<io::Error> for Error {
+impl From<io::Error> for ProgrammError {
     fn from(value: io::Error) -> Self {
         Self::FileError(value)
     }
 }
 
-impl From<serde_json::Error> for Error {
+impl From<serde_json::Error> for ProgrammError {
     fn from(value: serde_json::Error) -> Self {
         Self::ParseError(value)
     }
 }
 
-impl From<WriteError> for Error {
+impl From<WriteError> for ProgrammError {
     fn from(value: WriteError) -> Self {
-        Error::WriteError(value)
+        ProgrammError::WriteError(value)
     }
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), ProgrammError> {
     let manifest = read_manifest()?;
 
     let mut svg = SVG { documents: vec![] };
@@ -112,11 +112,11 @@ fn main() -> Result<(), Error> {
     return Ok(());
 }
 
-fn read_manifest() -> Result<Manifest, Error> {
+fn read_manifest() -> Result<Manifest, ProgrammError> {
     let path = env::args()
         .nth(1)
-        .ok_or(Error::MissingArgument("Manifest Path".to_string()))?;
+        .ok_or(ProgrammError::MissingArgument("Manifest Path".to_string()))?;
     let file = fs::read(path)?;
-    let result = serde_json::de::from_slice(&file)?;
-    return Ok(result);
+
+    Ok(serde_json::de::from_slice(&file)?)
 }
