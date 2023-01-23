@@ -1,3 +1,4 @@
+/*
 use std::{
     env,
     fs::{self, File},
@@ -119,4 +120,11 @@ fn read_manifest() -> Result<Manifest, ProgrammError> {
     let file = fs::read(path)?;
 
     Ok(serde_json::de::from_slice(&file)?)
+}
+ */
+
+mod write_defered;
+
+fn main() {
+    println!("Hello World!")
 }

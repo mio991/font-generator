@@ -1,4 +1,8 @@
+use std::io::Write;
+
 use byteorder::{WriteBytesExt, BE};
+
+use crate::open_type::{Sink, WriteDefered};
 
 use super::super::{Tag, WriteError};
 use super::table::Table;
@@ -15,7 +19,7 @@ impl Table for SVG {
         TAG
     }
 
-    fn store_internal(&self, writer: &mut dyn std::io::Write) -> Result<(), WriteError> {
+    fn store_internal<S: Sink>(&self, writer: &mut WriteDefered<S>) -> Result<(), WriteError> {
         writer.write_u16::<BE>(0)?; // Version
         writer.write_u32::<BE>(10)?; // Offset
         writer.write_u32::<BE>(0)?; // Reserved^
@@ -53,7 +57,11 @@ pub struct SVGDocumentRecord {
 }
 
 impl SVGDocumentRecord {
-    fn store(&self, writer: &mut dyn std::io::Write, offset: u32) -> Result<Vec<u8>, WriteError> {
+    fn store<S: Sink>(
+        &self,
+        writer: &mut WriteDefered<S>,
+        offset: u32,
+    ) -> Result<Vec<u8>, WriteError> {
         let file = std::fs::read(&self.document)?;
 
         writer.write_u16::<BE>(self.start_glyph_id)?; // startGlyphID

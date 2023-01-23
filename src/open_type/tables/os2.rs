@@ -1,4 +1,8 @@
+use std::io::Write;
+
 use byteorder::{WriteBytesExt, BE};
+
+use crate::open_type::{Sink, WriteDefered};
 
 use super::super::{Tag, WriteError};
 
@@ -43,7 +47,7 @@ impl Table for OS2 {
         TABLE_TAG
     }
 
-    fn store_internal(&self, writer: &mut dyn std::io::Write) -> Result<(), WriteError> {
+    fn store_internal<S: Sink>(&self, writer: &mut WriteDefered<S>) -> Result<(), WriteError> {
         writer.write_u16::<BE>(5)?;
         writer.write_i16::<BE>(self.avg_glyph_width)?;
         writer.write_u16::<BE>(self.weight_class)?;

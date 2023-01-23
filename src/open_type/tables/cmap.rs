@@ -1,6 +1,8 @@
 use byteorder::{WriteBytesExt, BE};
 use std::ops::Deref;
 
+use crate::open_type::{Sink, WriteDefered};
+
 use super::super::{Tag, WriteError};
 
 use super::{SearchData, Table};
@@ -24,7 +26,7 @@ impl Table for CMap {
         TAG
     }
 
-    fn store_internal(&self, writer: &mut dyn std::io::Write) -> Result<(), WriteError> {
+    fn store_internal<S: Sink>(&self, writer: &mut WriteDefered<S>) -> Result<(), WriteError> {
         // Header
         writer.write_u16::<BE>(0)?;
         writer.write_u16::<BE>(1)?;

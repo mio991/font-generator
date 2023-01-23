@@ -1,7 +1,8 @@
-use byteorder::{WriteBytesExt, BE};
-use std::io::Write;
+use std::io::{Read, Seek, Write};
 
-use super::{SearchData, Table, WriteError};
+use byteorder::{WriteBytesExt, BE};
+
+use super::{SearchData, Sink, Table, WriteDefered, WriteError};
 
 #[derive(Debug)]
 pub struct Document {
@@ -10,7 +11,7 @@ pub struct Document {
 }
 
 impl Document {
-    pub fn store(&mut self, writer: &mut dyn Write) -> Result<(), WriteError> {
+    pub fn store<S: Sink>(&mut self, writer: &mut WriteDefered<S>) -> Result<(), WriteError> {
         // +4
         writer.write_u32::<BE>(self.sfnt_version as u32)?;
 
