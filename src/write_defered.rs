@@ -3,75 +3,86 @@ use std::{
     io::{Read, Seek, SeekFrom, Write},
 };
 
-pub trait WriteOp<const R: usize, T: Write + Seek + Read>:
-    FnOnce(&mut T) -> std::io::Result<[u8; R]>
-{
-}
-impl<const R: usize, T: Write + Seek + Read, F: FnOnce(&mut T) -> std::io::Result<[u8; R]>>
-    WriteOp<R, T> for F
-{
-}
+pub trait Buffer: Write + Seek + Read {}
+impl<T: Write + Seek + Read> Buffer for T {}
 
-pub trait DeferedWrite {
-    type Buffer: Write + Seek + Read;
+pub trait WriteOp<const R: usize>: FnOnce(&mut dyn Buffer) -> std::io::Result<[u8; R]> {}
+impl<const R: usize, F: FnOnce(&mut dyn Buffer) -> std::io::Result<[u8; R]>> WriteOp<R> for F {}
 
-    fn write_defered<const R: usize, Op: WriteOp<R, Self::Buffer> + 'static>(
-        &mut self,
-        operation: Op,
-    ) -> std::io::Result<()>;
+pub trait WriteOpInt: FnOnce(&mut dyn Buffer, u64) -> std::io::Result<()> {}
+impl<F: FnOnce(&mut dyn Buffer, u64) -> std::io::Result<()>> WriteOpInt for F {}
+
+pub struct WriteDefered<T> {
+    inner: T,
+    ops: HashMap<u64, Box<dyn WriteOpInt>>,
 }
 
-trait WriteOpInt<T: Write + Seek + Read>: FnOnce(&mut T) -> std::io::Result<()> {}
-impl<T: Write + Seek + Read, F: FnOnce(&mut T) -> std::io::Result<()>> WriteOpInt<T> for F {}
-
-pub struct WriteDefered<T: Write + Seek + Read> {
-    inner: Box<T>,
-    ops: HashMap<u64, Box<dyn WriteOpInt<T>>>,
-}
-
-impl<T: Write + Seek + Read> WriteDefered<T> {
+impl<T> WriteDefered<T> {
     pub fn new(inner: T) -> Self {
         Self {
-            inner: Box::new(inner),
+            inner,
             ops: HashMap::new(),
         }
     }
+}
 
+impl<T: Buffer> WriteDefered<T> {
     pub fn resolve_pending(mut self) -> std::io::Result<T> {
         for (pos, op) in self.ops {
-            op(&mut self.inner)?;
+            op(&mut self.inner, pos)?;
         }
 
-        return Ok(*self.inner);
+        return Ok(self.inner);
     }
 }
 
-impl<T: Write + Seek + Read> DeferedWrite for WriteDefered<T> {
-    type Buffer = T;
-    fn write_defered<const R: usize, Op: WriteOp<R, Self::Buffer> + 'static>(
+pub trait DeferedWrite {
+    /// `temp` must have the same size as the value writen in `operation`
+    unsafe fn defer_write(
+        &mut self,
+        temp: &[u8],
+        operation: Box<dyn WriteOpInt>,
+    ) -> std::io::Result<()>;
+}
+
+impl<T: Buffer> DeferedWrite for WriteDefered<T> {
+    unsafe fn defer_write(
+        &mut self,
+        temp: &[u8],
+        operation: Box<dyn WriteOpInt>,
+    ) -> std::io::Result<()> {
+        let pos = self.inner.stream_position()?;
+
+        self.inner.write_all(temp)?;
+        self.ops.insert(pos, operation);
+
+        return Ok(());
+    }
+}
+
+impl dyn DeferedWrite + '_ {
+    fn write_defered<const R: usize, Op: WriteOp<R> + 'static>(
         &mut self,
         operation: Op,
     ) -> std::io::Result<()> {
-        let pos = self.inner.stream_position()?;
-        dbg!(pos);
         let operation = Box::new(operation);
 
-        self.inner.write_all(&[0; R])?;
+        unsafe {
+            // This is safe because the compiler check the sizes
+            self.defer_write(
+                &[0; R],
+                Box::new(move |writer, start| -> std::io::Result<()> {
+                    let value = operation(writer)?;
 
-        self.ops.insert(
-            pos,
-            Box::new(move |writer| -> std::io::Result<()> {
-                let value = operation(writer)?;
+                    writer.seek(SeekFrom::Start(start))?;
+                    let _pos = writer.stream_position()?;
+                    dbg!(_pos);
+                    writer.write_all(&value)?;
 
-                writer.seek(SeekFrom::Start(pos))?;
-                let _pos = writer.stream_position()?;
-                dbg!(_pos);
-                writer.write_all(&value)?;
-
-                return Ok(());
-            }),
-        );
-
+                    return Ok(());
+                }),
+            )?;
+        }
         return Ok(());
     }
 }
@@ -103,12 +114,18 @@ mod tests {
         let mut writer = WriteDefered::new(std::io::Cursor::new(Vec::new()));
 
         writer.write_all(b"a")?;
-        writer.write_defered(|w| Ok(*b"bcd"))?;
+        test_dyn(&mut writer)?;
         writer.write_all(b"e")?;
 
         let result = (writer.resolve_pending()?).into_inner();
 
         assert_eq!(result, b"abcde");
+
+        return Ok(());
+    }
+
+    fn test_dyn(writer: &mut dyn DeferedWrite) -> std::io::Result<()> {
+        writer.write_defered(|_w| Ok(*b"bcd"))?;
 
         return Ok(());
     }
