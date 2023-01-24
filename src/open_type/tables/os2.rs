@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use byteorder::{WriteBytesExt, BE};
 
 use crate::open_type::{Sink, WriteDefered};

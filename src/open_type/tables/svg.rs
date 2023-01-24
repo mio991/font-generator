@@ -2,10 +2,9 @@ use std::io::Write;
 
 use byteorder::{WriteBytesExt, BE};
 
-use crate::open_type::{Sink, WriteDefered};
+use crate::open_type::{Object, Table};
 
 use super::super::{Tag, WriteError};
-use super::table::Table;
 
 const TAG: Tag = *b"SVG ";
 
@@ -18,8 +17,14 @@ impl Table for SVG {
     fn get_tag(&self) -> Tag {
         TAG
     }
+}
 
-    fn store_internal<S: Sink>(&self, writer: &mut WriteDefered<S>) -> Result<(), WriteError> {
+impl Object for SVG {
+    fn get_size(&self) -> usize {
+        todo!()
+    }
+
+    fn write(&self, writer: &mut dyn Write) -> Result<(), WriteError> {
         writer.write_u16::<BE>(0)?; // Version
         writer.write_u32::<BE>(10)?; // Offset
         writer.write_u32::<BE>(0)?; // Reserved^
@@ -56,7 +61,7 @@ pub struct SVGDocumentRecord {
     pub document: String,
 }
 
-impl SVGDocumentRecord {
+impl Object for SVGDocumentRecord {
     fn store<S: Sink>(
         &self,
         writer: &mut WriteDefered<S>,

@@ -1,4 +1,3 @@
-/*
 use std::{
     env,
     fs::{self, File},
@@ -108,7 +107,7 @@ fn main() -> Result<(), ProgrammError> {
     let path = env::args().nth(2).unwrap_or("./out.otf".to_string());
     let mut file = File::create(path)?;
 
-    document.store(&mut file)?;
+    document.write(&mut file)?;
 
     return Ok(());
 }
@@ -120,11 +119,4 @@ fn read_manifest() -> Result<Manifest, ProgrammError> {
     let file = fs::read(path)?;
 
     Ok(serde_json::de::from_slice(&file)?)
-}
- */
-
-mod write_defered;
-
-fn main() {
-    println!("Hello World!")
 }

@@ -1,11 +1,9 @@
 use byteorder::{WriteBytesExt, BE};
-use std::ops::Deref;
+use std::{io::Write, ops::Deref};
 
-use crate::open_type::{Sink, WriteDefered};
+use crate::open_type::{Object, SearchData, Table};
 
 use super::super::{Tag, WriteError};
-
-use super::{SearchData, Table};
 
 #[derive(Debug)]
 pub struct CMap {
@@ -25,14 +23,21 @@ impl Table for CMap {
     fn get_tag(&self) -> Tag {
         TAG
     }
+}
 
-    fn store_internal<S: Sink>(&self, writer: &mut WriteDefered<S>) -> Result<(), WriteError> {
+impl Object for CMap {
+    fn get_size(&self) -> usize {
+        18 + self.ranges.get_size()
+    }
+
+    fn write(&self, writer: &mut dyn Write) -> Result<(), WriteError> {
         // Header
         writer.write_u16::<BE>(0)?;
         writer.write_u16::<BE>(1)?;
 
         writer.write_u16::<BE>(0)?; // PlatformId
         writer.write_u16::<BE>(3)?; // EncodingId
+
         writer.write_u32::<BE>(12)?; // SubTableOffset
 
         // Subtable
@@ -40,6 +45,23 @@ impl Table for CMap {
         writer.write_u16::<BE>(0)?; // Length
         writer.write_u16::<BE>(0)?; // Language
 
+        self.ranges.write(writer)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct CharacterRange {
+    pub start: u16,
+    pub end: u16,
+    pub start_id: u16,
+}
+
+impl Object for Vec<CharacterRange> {
+    fn get_size(&self) -> usize {
+        8 * (self.len() + 1) + 10
+    }
+
+    fn write(&self, writer: &mut dyn Write) -> Result<(), WriteError> {
         let seg_count = self.len() as u16 + 1;
         let search_data = SearchData::for_length(seg_count);
 
@@ -48,7 +70,7 @@ impl Table for CMap {
         writer.write_u16::<BE>(search_data.entry_selector)?; // entrySelector
         writer.write_u16::<BE>(search_data.range_shift)?; // rangeShift
 
-        let mut ranges = self.ranges.clone();
+        let mut ranges = self.clone();
         ranges.push(CharacterRange {
             start: 0xffff,
             end: 0xffff,
@@ -72,13 +94,7 @@ impl Table for CMap {
         for _range in ranges.iter() {
             writer.write_u16::<BE>(0)?; // idRangeOffset[i]
         }
+
         return Ok(());
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct CharacterRange {
-    pub start: u16,
-    pub end: u16,
-    pub start_id: u16,
 }
