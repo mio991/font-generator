@@ -22,6 +22,24 @@ impl File {
     }
 }
 
+impl Layoutable<Box<dyn Layouted>> for File {
+    fn layout(&self, layouter: &mut Layouter) -> Box<dyn Layouted> {
+        let reservation = layouter.reserve(self.tables.len() * 16 + 12);
+
+        let tables: Vec<_> = self
+            .tables
+            .iter()
+            .map(|tabel| tabel.layout(layouter))
+            .collect();
+
+        Box::new(LayoutedFile {
+            requires_pass: true,
+            reservation,
+            tables,
+        })
+    }
+}
+
 struct LayoutedFile {
     requires_pass: bool,
     reservation: Reservation,
@@ -74,7 +92,7 @@ fn checksum(reservation: &Reservation) -> std::io::Result<u32> {
 
     let mut reader = reservation.reader();
 
-    let mut sum = 0;
+    let mut sum: u32 = 0;
     let mut remaining = reader.seek(std::io::SeekFrom::End(0))?;
 
     reader.seek(std::io::SeekFrom::Start(0))?;
@@ -82,7 +100,7 @@ fn checksum(reservation: &Reservation) -> std::io::Result<u32> {
     while remaining >= 4 {
         remaining -= 4;
 
-        sum += reader.read_u32::<BE>()?;
+        sum = sum.wrapping_add(reader.read_u32::<BE>()?);
     }
 
     if remaining > 0 {
@@ -95,22 +113,4 @@ fn checksum(reservation: &Reservation) -> std::io::Result<u32> {
     }
 
     Ok(sum)
-}
-
-impl Layoutable<LayoutedFile> for File {
-    fn layout(&self, layouter: &mut Layouter) -> Result<LayoutedFile, LayoutError> {
-        let reservation = layouter.reserve(self.tables.len() * 16 + 12);
-
-        let tables: Vec<_> = self
-            .tables
-            .iter()
-            .map(|tabel| tabel.layout(layouter))
-            .collect::<Result<_, _>>()?;
-
-        Ok(LayoutedFile {
-            requires_pass: true,
-            reservation,
-            tables,
-        })
-    }
 }

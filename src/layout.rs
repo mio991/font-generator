@@ -1,5 +1,5 @@
 use std::{
-    cell::{Ref, RefCell, RefMut},
+    cell::{RefCell, RefMut},
     io::Cursor,
     rc::Rc,
 };
@@ -19,11 +19,11 @@ pub trait Layouted {
 }
 
 pub trait Layoutable<L> {
-    fn layout(&self, layouter: &mut Layouter) -> Result<L, LayoutError>;
+    fn layout(&self, layouter: &mut Layouter) -> L;
 }
 
-impl<L, T: Fn(&mut Layouter) -> Result<L, LayoutError>> Layoutable<L> for T {
-    fn layout(&self, layouter: &mut Layouter) -> Result<L, LayoutError> {
+impl<L, T: Fn(&mut Layouter) -> L> Layoutable<L> for T {
+    fn layout(&self, layouter: &mut Layouter) -> L {
         self(layouter)
     }
 }
