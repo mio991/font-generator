@@ -1,17 +1,33 @@
 use std::{
-    cell::{RefCell, RefMut},
+    cell::{Ref, RefCell, RefMut},
     io::Cursor,
     rc::Rc,
 };
 
-pub trait Layouted {
-    fn requires_another_pass(&self) -> bool;
-    fn pass(&mut self);
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum LayoutError {
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
 }
 
-pub trait Layoutable {
-    fn layout(&self, layouter: &mut Layouter) -> Box<dyn Layouted>;
+pub trait Layouted {
+    fn reservation(&self) -> &Reservation;
+    fn requires_another_pass(&self) -> bool;
+    fn pass(&mut self, current_file: &[u8]) -> Result<(), LayoutError>;
 }
+
+pub trait Layoutable<L> {
+    fn layout(&self, layouter: &mut Layouter) -> Result<L, LayoutError>;
+}
+
+impl<L, T: Fn(&mut Layouter) -> Result<L, LayoutError>> Layoutable<L> for T {
+    fn layout(&self, layouter: &mut Layouter) -> Result<L, LayoutError> {
+        self(layouter)
+    }
+}
+
 #[derive(Debug)]
 pub struct Layouter {
     current_length: usize,
@@ -26,15 +42,19 @@ impl Layouter {
         }
     }
 
-    pub fn reserve(&mut self, size: usize) -> Reservation {
+    pub fn reserve(&mut self, len: usize) -> Reservation {
         let offset = self.current_length;
-        self.current_length += size;
+        self.current_length += len;
 
-        let buffer = Rc::new(RefCell::new(Cursor::new(vec![0; size].into())));
+        let buffer = Rc::new(RefCell::new(Cursor::new(vec![0; len].into())));
 
         self.buffer.push(buffer.clone());
 
-        Reservation { offset, buffer }
+        Reservation {
+            offset,
+            len,
+            buffer,
+        }
     }
 
     pub fn get_result(&self) -> Vec<u8> {
@@ -53,6 +73,7 @@ impl Layouter {
 #[derive(Debug)]
 pub struct Reservation {
     offset: usize,
+    len: usize,
     buffer: Rc<RefCell<Cursor<Box<[u8]>>>>,
 }
 
@@ -61,8 +82,20 @@ impl Reservation {
         self.offset
     }
 
-    pub fn writer(&mut self) -> RefMut<impl std::io::Write> {
-        self.buffer.borrow_mut()
+    pub fn len(&self) -> usize {
+        self.len
+    }
+
+    pub fn writer(&mut self) -> RefMut<impl std::io::Write + std::io::Seek> {
+        let mut writer = self.buffer.borrow_mut();
+        writer.set_position(0);
+        writer
+    }
+
+    pub fn reader(&self) -> RefMut<impl std::io::Read + std::io::Seek> {
+        let mut reader = self.buffer.borrow_mut();
+        reader.set_position(0);
+        reader
     }
 }
 
