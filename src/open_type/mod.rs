@@ -1,6 +1,9 @@
+mod f2dot14;
 mod file;
+mod fixed;
 mod search;
-mod tables;
+pub mod tables;
 
+pub use f2dot14::*;
 pub use file::*;
-pub use tables::*;
+pub use fixed::*;

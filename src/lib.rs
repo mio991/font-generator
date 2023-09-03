@@ -1,12 +1,12 @@
 #![feature(associated_type_defaults)]
+#![feature(once_cell)]
 
-pub use layout::*;
+pub use layout::{LayoutError, Layoutable, Layouted, Layouter};
 pub use manifest::Manifest;
-pub use open_type::*;
 
 mod layout;
-mod manifest;
-mod open_type;
+pub mod manifest;
+pub mod open_type;
 
 #[cfg(test)]
 mod test {}

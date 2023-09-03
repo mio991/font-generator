@@ -1,6 +1,6 @@
 use byteorder::{ByteOrder, WriteBytesExt};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Fixed {
     pub major: i16,
     pub minor: u16,

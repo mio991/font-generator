@@ -1,7 +1,4 @@
-use std::{
-    cmp::Ordering,
-    ops::{Add, Neg, Sub},
-};
+use std::{cmp::Ordering, ops::Add};
 
 #[derive(Debug, PartialEq, Eq, Ord)]
 pub struct F2Dot14 {
@@ -61,9 +58,12 @@ impl Add for F2Dot14 {
     }
 }
 
+/*
 impl Neg for F2Dot14 {
     type Output = F2Dot14;
 
     fn neg(self) -> Self::Output {}
 }
+
 impl Sub for F2Dot14 {}
+*/

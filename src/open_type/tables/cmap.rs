@@ -3,8 +3,7 @@ use std::{io::Write, ops::DerefMut};
 
 use crate::{
     layout::{Layoutable, Layouted, Reservation},
-    open_type::search::SearchData,
-    LayoutedTable,
+    open_type::{search::SearchData, LayoutableTable, LayoutedTable},
 };
 
 #[derive(Debug, Clone)]
@@ -22,6 +21,12 @@ pub struct CMap {
 impl CMap {
     pub fn new_with_ranges(ranges: Vec<CharacterRange>) -> Self {
         Self { ranges }
+    }
+}
+
+impl LayoutableTable for CMap {
+    fn tag(&self) -> [u8; 4] {
+        *b"cmap"
     }
 }
 

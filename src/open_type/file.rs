@@ -10,14 +10,16 @@ pub trait LayoutedTable: Layouted {
     fn tag(&self) -> [u8; 4];
 }
 
-type LayoutableTable = Box<dyn Layoutable<Box<dyn LayoutedTable>>>;
+pub trait LayoutableTable: Layoutable<Box<dyn LayoutedTable>> {
+    fn tag(&self) -> [u8; 4];
+}
 
 pub struct File {
-    tables: Vec<LayoutableTable>,
+    tables: Vec<Box<dyn LayoutableTable>>,
 }
 
 impl File {
-    pub fn new_with_tables(tables: Vec<LayoutableTable>) -> Self {
+    pub fn new_with_tables(tables: Vec<Box<dyn LayoutableTable>>) -> Self {
         Self { tables }
     }
 }
