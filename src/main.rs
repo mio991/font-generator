@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, io::Write};
 
 use chrono::Utc;
 use font_generator::{
@@ -25,9 +25,39 @@ fn main() -> Result<(), Box<dyn Error>> {
             units_per_em: 40,
             smalest_recocnizeable_size: 6,
         }),
+        Box::new(OS2 {
+            avg_glyph_width: 100,
+            weight_class: 400,
+            width_class: 5,
+            subscript: Script {
+                x_size: 60,
+                y_size: 60,
+                x_offset: 5,
+                y_offset: 40,
+            },
+            superscript: Script {
+                x_size: 60,
+                y_size: 60,
+                x_offset: 5,
+                y_offset: -40,
+            },
+            strikeout_size: 10,
+            strikeout_position: 45,
+            panose: Panose::default(),
+            typo_ascender: 20,
+            typo_descender: 30,
+            typo_line_gap: 120,
+            win_ascent: 60,
+            win_descent: 80,
+            x_height: 60,
+            cap_height: 80,
+            default_cahr: 0,
+            break_char: ' ' as u16,
+            max_context: 1,
+        }),
     ]);
 
-    let mut file = Layouter::new();
+    let mut file = Layouter::new(4);
 
     let mut doc = doc.layout(&mut file);
 
@@ -39,7 +69,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         result = file.get_result();
     }
 
-    dbg!(result);
+    let path = std::env::args().nth(2).unwrap_or("./out.otf".to_string());
+    let mut file = std::fs::File::create(path)?;
+
+    file.write_all(&result)?;
 
     Ok(())
 }

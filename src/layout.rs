@@ -30,19 +30,27 @@ impl<L, T: Fn(&mut Layouter) -> L> Layoutable<L> for T {
 
 #[derive(Debug)]
 pub struct Layouter {
+    alignment: usize,
     current_length: usize,
     buffer: Vec<Rc<RefCell<Cursor<Box<[u8]>>>>>,
 }
 
 impl Layouter {
-    pub fn new() -> Self {
+    pub fn new(alignment: usize) -> Self {
         Self {
+            alignment,
             current_length: 0,
             buffer: Vec::new(),
         }
     }
 
-    pub fn reserve(&mut self, len: usize) -> Reservation {
+    pub fn reserve(&mut self, mut len: usize) -> Reservation {
+        let padding = (self.alignment - (len % self.alignment)) % self.alignment;
+
+        println!("Length: {}\tPadding: {}", len, padding);
+
+        len += padding;
+
         let offset = self.current_length;
         self.current_length += len;
 
@@ -107,14 +115,14 @@ mod test {
 
     #[test]
     fn can_create_a_reservation() {
-        let mut layouter = Layouter::new();
+        let mut layouter = Layouter::new(1);
 
         layouter.reserve(8);
     }
 
     #[test]
     fn reservations_have_the_correct_offset() {
-        let mut layouter = Layouter::new();
+        let mut layouter = Layouter::new(1);
 
         layouter.reserve(8);
 
@@ -125,7 +133,7 @@ mod test {
 
     #[test]
     fn can_write_to_a_reservation() -> std::io::Result<()> {
-        let mut layouter = Layouter::new();
+        let mut layouter = Layouter::new(4);
 
         let mut reservation = layouter.reserve(8);
 
@@ -136,7 +144,7 @@ mod test {
 
     #[test]
     fn result_contains_what_was_written() -> std::io::Result<()> {
-        let mut layouter = Layouter::new();
+        let mut layouter = Layouter::new(1);
 
         layouter.reserve(4).writer().write_all(b"abcd")?;
 
@@ -151,7 +159,7 @@ mod test {
 
     #[test]
     fn can_not_write_more_than_reserved() {
-        let mut layouter = Layouter::new();
+        let mut layouter = Layouter::new(1);
 
         let result = layouter.reserve(4).writer().write_all(b"abcdefg");
 

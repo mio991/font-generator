@@ -19,7 +19,10 @@ pub struct File {
 }
 
 impl File {
-    pub fn new_with_tables(tables: Vec<Box<dyn LayoutableTable>>) -> Self {
+    pub fn new_with_tables(mut tables: Vec<Box<dyn LayoutableTable>>) -> Self {
+        tables.sort_by_key(|t| {
+            String::from(std::str::from_utf8(&t.tag()).unwrap_or("_MISSING_")).to_lowercase()
+        });
         Self { tables }
     }
 }
@@ -31,7 +34,13 @@ impl Layoutable<Box<dyn Layouted>> for File {
         let tables: Vec<_> = self
             .tables
             .iter()
-            .map(|tabel| tabel.layout(layouter))
+            .map(|tabel| {
+                println!(
+                    "Layout Table: {:?}",
+                    std::str::from_utf8(&tabel.tag()).unwrap_or("MISSING")
+                );
+                tabel.layout(layouter)
+            })
             .collect();
 
         Box::new(LayoutedFile {

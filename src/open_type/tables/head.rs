@@ -227,7 +227,7 @@ fn checksum(file: &[u8]) -> std::io::Result<u32> {
 
         buffer.resize(4, 0);
 
-        sum += buffer.as_slice().read_u32::<BE>()?;
+        sum = sum.wrapping_add(buffer.as_slice().read_u32::<BE>()?);
     }
 
     Ok(0xB1B0AFBAu32.wrapping_sub(sum))
