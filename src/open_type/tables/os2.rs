@@ -77,7 +77,7 @@ pub struct OS2 {
 impl Layoutable<Box<dyn LayoutedTable>> for OS2 {
     fn layout(&self, layouter: &mut crate::Layouter) -> Box<dyn LayoutedTable> {
         Box::new(OS2Layouted {
-            reservation: layouter.reserve(70 + 2 * 8 + 10),
+            reservation: layouter.reserve(100),
             requires_another_pass: true,
             table: self.clone(),
         })

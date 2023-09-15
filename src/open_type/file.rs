@@ -20,9 +20,7 @@ pub struct File {
 
 impl File {
     pub fn new_with_tables(mut tables: Vec<Box<dyn LayoutableTable>>) -> Self {
-        tables.sort_by_key(|t| {
-            String::from(std::str::from_utf8(&t.tag()).unwrap_or("_MISSING_")).to_lowercase()
-        });
+        tables.sort_by_key(|t| String::from(std::str::from_utf8(&t.tag()).unwrap_or("_MISSING_")));
         Self { tables }
     }
 }

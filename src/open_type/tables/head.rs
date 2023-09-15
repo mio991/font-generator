@@ -109,7 +109,7 @@ impl Layoutable<Box<dyn LayoutedTable>> for Head {
     fn layout(&self, layouter: &mut crate::Layouter) -> Box<dyn LayoutedTable> {
         Box::new(LayoutedHead {
             requires_another_pass: true,
-            reservation: layouter.reserve(58),
+            reservation: layouter.reserve(54),
             checksum: 0,
             revision: self.revision.clone(),
             flags: self.flags.as_u16(),

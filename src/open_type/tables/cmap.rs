@@ -1,5 +1,4 @@
 use byteorder::{WriteBytesExt, BE};
-use std::{io::Write, ops::DerefMut};
 
 use crate::{
     layout::{Layoutable, Layouted, Reservation},
@@ -38,46 +37,6 @@ impl Layoutable<Box<dyn LayoutedTable>> for CMap {
             ranges: self.ranges.clone(),
         })
     }
-}
-
-fn write_character_ranges<W: Write>(
-    ranges: &Vec<CharacterRange>,
-    writer: &mut W,
-) -> std::io::Result<()> {
-    let seg_count = ranges.len() as u16 + 1;
-    let search_data = SearchData::for_length(seg_count);
-
-    writer.write_u16::<BE>(seg_count * 2)?; // SegCountX2
-    writer.write_u16::<BE>(search_data.search_range)?; // searchRange
-    writer.write_u16::<BE>(search_data.entry_selector)?; // entrySelector
-    writer.write_u16::<BE>(search_data.range_shift)?; // rangeShift
-
-    let mut ranges = ranges.clone();
-    ranges.push(CharacterRange {
-        start: 0xffff,
-        end: 0xffff,
-        start_id: 0,
-    });
-
-    for range in ranges.iter() {
-        writer.write_u16::<BE>(range.end)?; // endCode[i]
-    }
-
-    writer.write_u16::<BE>(0)?; // reservedPad
-
-    for range in ranges.iter() {
-        writer.write_u16::<BE>(range.start)?; // startCode[i]
-    }
-
-    for range in ranges.iter() {
-        writer.write_u16::<BE>(range.start_id.wrapping_sub(range.start))?; // idDelta[i]
-    }
-
-    for _range in ranges.iter() {
-        writer.write_u16::<BE>(0)?; // idRangeOffset[i]
-    }
-
-    return Ok(());
 }
 
 struct LayoutedCMap {
@@ -119,7 +78,38 @@ impl Layouted for LayoutedCMap {
         writer.write_u16::<BE>(0)?; // Length
         writer.write_u16::<BE>(0)?; // Language
 
-        write_character_ranges(&self.ranges, &mut writer.deref_mut())?;
+        let mut ranges = self.ranges.clone();
+        ranges.push(CharacterRange {
+            start: 0xffff,
+            end: 0xffff,
+            start_id: 0,
+        });
+
+        let seg_count = ranges.len() as u16;
+        let search_data = SearchData::for_length(seg_count);
+
+        writer.write_u16::<BE>(seg_count * 2)?; // SegCountX2
+        writer.write_u16::<BE>(search_data.search_range)?; // searchRange
+        writer.write_u16::<BE>(search_data.entry_selector)?; // entrySelector
+        writer.write_u16::<BE>(search_data.range_shift)?; // rangeShift
+
+        for range in ranges.iter() {
+            writer.write_u16::<BE>(range.end)?; // endCode[i]
+        }
+
+        writer.write_u16::<BE>(0)?; // reservedPad
+
+        for range in ranges.iter() {
+            writer.write_u16::<BE>(range.start)?; // startCode[i]
+        }
+
+        for range in ranges.iter() {
+            writer.write_u16::<BE>(range.start_id.wrapping_sub(range.start))?; // idDelta[i]
+        }
+
+        for _range in ranges.iter() {
+            writer.write_u16::<BE>(0)?; // idRangeOffset[i]
+        }
 
         Ok(())
     }

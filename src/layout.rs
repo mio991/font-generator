@@ -44,17 +44,17 @@ impl Layouter {
         }
     }
 
-    pub fn reserve(&mut self, mut len: usize) -> Reservation {
+    pub fn reserve(&mut self, len: usize) -> Reservation {
         let padding = (self.alignment - (len % self.alignment)) % self.alignment;
 
         println!("Length: {}\tPadding: {}", len, padding);
 
-        len += padding;
+        let actual_len = len + padding;
 
         let offset = self.current_length;
-        self.current_length += len;
+        self.current_length += actual_len;
 
-        let buffer = Rc::new(RefCell::new(Cursor::new(vec![0; len].into())));
+        let buffer = Rc::new(RefCell::new(Cursor::new(vec![0; actual_len].into())));
 
         self.buffer.push(buffer.clone());
 
