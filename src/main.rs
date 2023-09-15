@@ -70,7 +70,14 @@ fn main() -> Result<(), Box<dyn Error>> {
             caret_slope_run: 0,
             caret_offset: 0,
             metric_data_format: 0,
-            number_of_hmetrics: 0,
+            number_of_hmetrics: 1,
+        }),
+        Box::new(Hmtx {
+            horizontal_metrics: vec![HorizontalMetric {
+                advance_width: 0,
+                left_side_bearing: 0,
+            }],
+            left_side_bearings: vec![],
         }),
     ]);
 
