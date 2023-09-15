@@ -119,6 +119,7 @@ impl Layoutable<Box<dyn LayoutedTable>> for Head {
             min_y: self.min_y,
             max_x: self.max_x,
             max_y: self.max_y,
+            units_per_em: self.units_per_em,
             smalest_recocnizeable_size: self.smalest_recocnizeable_size,
         })
     }
@@ -130,6 +131,7 @@ struct LayoutedHead {
     revision: Fixed,
     checksum: u32,
     flags: u16,
+    units_per_em: u16,
     created: DateTime<Utc>,
     modified: DateTime<Utc>,
     min_x: i16,
@@ -177,6 +179,8 @@ impl Layouted for LayoutedHead {
 
         writer.write_u32::<BE>(0x5F0F3CF5)?; // magicNumber
         writer.write_u16::<BE>(self.flags)?;
+
+        writer.write_u16::<BE>(self.units_per_em)?;
 
         writer.write_i64::<BE>((self.created - *EMPOCH).num_seconds())?;
         writer.write_i64::<BE>((self.modified - *EMPOCH).num_seconds())?;
