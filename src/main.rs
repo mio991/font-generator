@@ -99,6 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 },
             ],
         }),
+        Box::new(Post::default()),
     ]);
 
     let mut file = Layouter::new(4);
