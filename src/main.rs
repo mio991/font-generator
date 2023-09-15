@@ -79,6 +79,26 @@ fn main() -> Result<(), Box<dyn Error>> {
             }],
             left_side_bearings: vec![],
         }),
+        Box::new(Name {
+            names: vec![
+                NameRecord {
+                    name_id: 1,
+                    content: String::from("Test Font"),
+                },
+                NameRecord {
+                    name_id: 2,
+                    content: String::from("Default"),
+                },
+                NameRecord {
+                    name_id: 8,
+                    content: String::from("mio991"),
+                },
+                NameRecord {
+                    name_id: 9,
+                    content: String::from("mio991"),
+                },
+            ],
+        }),
     ]);
 
     let mut file = Layouter::new(4);
