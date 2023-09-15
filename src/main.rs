@@ -55,6 +55,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             break_char: ' ' as u16,
             max_context: 1,
         }),
+        Box::new(MaxP {
+            number_of_glyphs: 1,
+        }),
     ]);
 
     let mut file = Layouter::new(4);
