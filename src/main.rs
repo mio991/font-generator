@@ -58,6 +58,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         Box::new(MaxP {
             number_of_glyphs: 1,
         }),
+        Box::new(HHead {
+            ascender: 0,
+            descender: 0,
+            line_gap: 0,
+            advance_width_max: 0,
+            min_left_side_bearing: 0,
+            min_right_side_bearing: 0,
+            x_max_extent: 0,
+            caret_slope_rise: 1,
+            caret_slope_run: 0,
+            caret_offset: 0,
+            metric_data_format: 0,
+            number_of_hmetrics: 0,
+        }),
     ]);
 
     let mut file = Layouter::new(4);
