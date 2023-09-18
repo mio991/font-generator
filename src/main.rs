@@ -2,7 +2,11 @@ use std::{error::Error, io::Write};
 
 use chrono::Utc;
 use font_generator::{
-    open_type::{tables::*, *},
+    open_type::{
+        tables::*,
+        true_type::{Contour, Point},
+        *,
+    },
     *,
 };
 
@@ -100,6 +104,17 @@ fn main() -> Result<(), Box<dyn Error>> {
             ],
         }),
         Box::new(Post::default()),
+        Box::new(Glyf::Simple {
+            contours: vec![Contour {
+                points: vec![
+                    Point::on_curve(0, 0),
+                    Point::on_curve(0, 40),
+                    Point::on_curve(14, 40),
+                    Point::on_curve(14, 0),
+                ],
+            }],
+            instructions: vec![],
+        }),
     ]);
 
     let mut file = Layouter::new(4);
