@@ -114,7 +114,6 @@ impl Layouted for OS2Layouted {
     fn pass(&mut self, _current_file: &[u8]) -> Result<(), crate::LayoutError> {
         use byteorder::{WriteBytesExt, BE};
         use helpers::*;
-        use std::io::Write;
 
         self.requires_another_pass = false;
 

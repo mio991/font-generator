@@ -85,6 +85,14 @@ pub struct Reservation {
     buffer: Rc<RefCell<Cursor<Box<[u8]>>>>,
 }
 
+pub trait SeekWrite: std::io::Write + std::io::Seek {}
+
+impl<T: std::io::Write + std::io::Seek> SeekWrite for T {}
+
+pub trait SeekRead: std::io::Read + std::io::Seek {}
+
+impl<T: std::io::Read + std::io::Seek> SeekRead for T {}
+
 impl Reservation {
     pub fn offset(&self) -> usize {
         self.offset
@@ -94,13 +102,13 @@ impl Reservation {
         self.len
     }
 
-    pub fn writer(&mut self) -> RefMut<impl std::io::Write + std::io::Seek> {
+    pub fn writer(&mut self) -> RefMut<dyn SeekWrite> {
         let mut writer = self.buffer.borrow_mut();
         writer.set_position(0);
         writer
     }
 
-    pub fn reader(&self) -> RefMut<impl std::io::Read + std::io::Seek> {
+    pub fn reader(&self) -> RefMut<dyn SeekRead> {
         let mut reader = self.buffer.borrow_mut();
         reader.set_position(0);
         reader

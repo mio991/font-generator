@@ -1,7 +1,3 @@
-use std::io::Seek;
-
-use byteorder::ReadBytesExt;
-
 use crate::layout::{LayoutError, Layoutable, Layouted, Layouter, Reservation};
 
 use super::search::SearchData;
@@ -66,7 +62,6 @@ impl Layouted for LayoutedFile {
 
     fn pass(&mut self, current_file: &[u8]) -> Result<(), LayoutError> {
         use byteorder::{WriteBytesExt, BE};
-        use std::io::Write;
 
         for table in self.tables.iter_mut() {
             table.pass(current_file)?;
@@ -96,8 +91,7 @@ impl Layouted for LayoutedFile {
 }
 
 fn checksum(reservation: &Reservation) -> std::io::Result<u32> {
-    use byteorder::BE;
-    use std::io::Read;
+    use byteorder::{ReadBytesExt, BE};
 
     let mut reader = reservation.reader();
 

@@ -1,5 +1,7 @@
+use std::cell::RefMut;
+
 use crate::{
-    layout::Reservation,
+    layout::{Reservation, SeekWrite},
     open_type::{
         true_type::{Contour, Instrution},
         LayoutableTable, LayoutedTable,
@@ -7,21 +9,40 @@ use crate::{
     Layoutable, Layouted,
 };
 
-pub enum Glyf {
+#[derive(Debug, Clone)]
+pub enum Glyph {
     Simple {
         contours: Vec<Contour>,
         instructions: Vec<Instrution>,
     },
 }
 
+pub struct Glyf {
+    pub glyphs: Vec<Glyph>,
+}
+
 impl Layoutable<Box<dyn LayoutedTable>> for Glyf {
     fn layout(&self, layouter: &mut crate::Layouter) -> Box<dyn LayoutedTable> {
-        match self {
-            Glyf::Simple {
-                contours,
-                instructions,
-            } => Box::new(LayoutedSimpleGlyph::new(layouter, contours, instructions)),
-        }
+        let glyphs: Vec<_> = self
+            .glyphs
+            .iter()
+            .map(|glyph| -> Box<dyn LayoutedGlyph> {
+                match glyph {
+                    Glyph::Simple {
+                        contours,
+                        instructions,
+                    } => Box::new(LayoutedSimpleGlyph::new(contours, instructions)),
+                }
+            })
+            .collect();
+
+        let total_size = glyphs.iter().map(|g| g.size()).sum();
+
+        Box::new(LayoutedGlyf {
+            reservation: layouter.reserve(total_size),
+            requires_another_pass: true,
+            glyphs,
+        })
     }
 }
 
@@ -31,9 +52,47 @@ impl LayoutableTable for Glyf {
     }
 }
 
-struct LayoutedSimpleGlyph {
+struct LayoutedGlyf {
     reservation: Reservation,
     requires_another_pass: bool,
+    glyphs: Vec<Box<dyn LayoutedGlyph>>,
+}
+
+impl Layouted for LayoutedGlyf {
+    fn reservation(&self) -> &Reservation {
+        &self.reservation
+    }
+
+    fn requires_another_pass(&self) -> bool {
+        self.requires_another_pass
+    }
+
+    fn pass(&mut self, _current_file: &[u8]) -> Result<(), crate::LayoutError> {
+        self.requires_another_pass = false;
+
+        let mut writer = self.reservation.writer();
+
+        for glyph in self.glyphs.iter_mut() {
+            glyph.write(&mut writer)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl LayoutedTable for LayoutedGlyf {
+    fn tag(&self) -> [u8; 4] {
+        *b"glyf"
+    }
+}
+
+trait LayoutedGlyph {
+    fn size(&self) -> usize;
+    fn write(&self, writer: &mut RefMut<dyn SeekWrite>) -> std::io::Result<()>;
+}
+
+struct LayoutedSimpleGlyph {
+    size: usize,
     contours: Vec<Contour>,
     instructions: Vec<Instrution>,
     x_min: i16,
@@ -43,11 +102,7 @@ struct LayoutedSimpleGlyph {
 }
 
 impl LayoutedSimpleGlyph {
-    fn new(
-        layouter: &mut crate::Layouter,
-        contours: &[Contour],
-        instructions: &[Instrution],
-    ) -> Self {
+    fn new(contours: &[Contour], instructions: &[Instrution]) -> Self {
         #[derive(Debug, Default, Clone, Copy)]
         struct Envelop {
             x_min: i16,
@@ -67,12 +122,10 @@ impl LayoutedSimpleGlyph {
         );
 
         LayoutedSimpleGlyph {
-            reservation: layouter.reserve(
-                14 + (contours.len() * 2)
-                    + (instructions.len() * 1)
-                    + (contours.iter().map(|c| c.points.len()).sum::<usize>() * 5),
-            ),
-            requires_another_pass: true,
+            size: 14
+                + (contours.len() * 2)
+                + (instructions.len() * 1)
+                + (contours.iter().map(|c| c.points.len()).sum::<usize>() * 5),
             contours: contours.to_vec(),
             instructions: instructions.to_vec(),
             x_min: envelop.x_min,
@@ -83,21 +136,13 @@ impl LayoutedSimpleGlyph {
     }
 }
 
-impl Layouted for LayoutedSimpleGlyph {
-    fn reservation(&self) -> &Reservation {
-        &self.reservation
+impl LayoutedGlyph for LayoutedSimpleGlyph {
+    fn size(&self) -> usize {
+        self.size
     }
 
-    fn requires_another_pass(&self) -> bool {
-        self.requires_another_pass
-    }
-
-    fn pass(&mut self, _current_file: &[u8]) -> Result<(), crate::LayoutError> {
+    fn write(&self, writer: &mut RefMut<dyn SeekWrite>) -> std::io::Result<()> {
         use byteorder::{WriteBytesExt, BE};
-
-        self.requires_another_pass = false;
-
-        let mut writer = self.reservation.writer();
 
         writer.write_u16::<BE>(self.contours.len() as u16)?;
 
@@ -147,11 +192,5 @@ impl Layouted for LayoutedSimpleGlyph {
         }
 
         Ok(())
-    }
-}
-
-impl LayoutedTable for LayoutedSimpleGlyph {
-    fn tag(&self) -> [u8; 4] {
-        *b"glyf"
     }
 }
