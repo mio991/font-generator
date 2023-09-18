@@ -30,4 +30,24 @@ impl Point {
 }
 
 #[derive(Debug, Clone)]
-pub enum Instrution {}
+pub enum Instrution {
+    PushBytes(Box<[u8]>),
+}
+
+pub trait InstrutionWriteExt: std::io::Write {
+    fn write_instruction(&mut self, instruction: &Instrution) -> std::io::Result<()> {
+        use byteorder::WriteBytesExt;
+        use Instrution as I;
+
+        match instruction {
+            I::PushBytes(bytes) => {
+                self.write_u8(0xB0 + bytes.len() as u8)?;
+                self.write_all(bytes.as_ref())?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl<W: std::io::Write + ?Sized> InstrutionWriteExt for W {}

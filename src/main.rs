@@ -29,6 +29,11 @@ fn main() -> Result<(), Box<dyn Error>> {
             units_per_em: 40,
             smalest_recocnizeable_size: 6,
         }),
+        Box::new(CMap::new_with_ranges(vec![CharacterRange {
+            start: 'o',
+            end: 'o',
+            start_index: 1,
+        }])),
         Box::new(OS2 {
             avg_glyph_width: 100,
             weight_class: 400,
