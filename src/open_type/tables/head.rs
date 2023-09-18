@@ -197,7 +197,7 @@ impl Layouted for LayoutedHead {
 
         writer.write_i16::<BE>(2)?; // fontDirectionHint
 
-        writer.write_i16::<BE>(0)?; // indexToLocFormat
+        writer.write_i16::<BE>(1)?; // indexToLocFormat
         writer.write_i16::<BE>(0)?; // glyphDataFormat
 
         Ok(())

@@ -15,8 +15,7 @@ pub struct File {
 }
 
 impl File {
-    pub fn new_with_tables(mut tables: Vec<Box<dyn LayoutableTable>>) -> Self {
-        tables.sort_by_key(|t| String::from(std::str::from_utf8(&t.tag()).unwrap_or("_MISSING_")));
+    pub fn new_with_tables(tables: Vec<Box<dyn LayoutableTable>>) -> Self {
         Self { tables }
     }
 }
@@ -70,14 +69,17 @@ impl Layouted for LayoutedFile {
         let search_data = SearchData::for_length(self.tables.len() as u16);
         let mut writer = self.reservation.writer();
 
-        writer.write_all(b"OTTO")?; // Magic Number
+        writer.write_u32::<BE>(0x00010000)?; // Magic Number
         writer.write_u16::<BE>(self.tables.len() as u16)?;
 
         writer.write_u16::<BE>(search_data.search_range)?;
         writer.write_u16::<BE>(search_data.entry_selector)?;
         writer.write_u16::<BE>(search_data.range_shift)?;
 
-        for table in self.tables.iter() {
+        let mut tables: Vec<_> = self.tables.iter().collect();
+        tables.sort_by_key(|t| String::from(std::str::from_utf8(&t.tag()).unwrap_or("_MISSING_")));
+
+        for table in tables.iter() {
             writer.write_all(&table.tag())?;
             writer.write_u32::<BE>(checksum(table.reservation())?)?;
             writer.write_u32::<BE>(table.reservation().offset() as u32)?;

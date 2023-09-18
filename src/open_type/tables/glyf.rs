@@ -3,7 +3,7 @@ use std::cell::RefMut;
 use crate::{
     layout::{Reservation, SeekWrite},
     open_type::{
-        true_type::{Contour, Instrution},
+        true_type::{Contour, Instrution, InstrutionWriteExt},
         LayoutableTable, LayoutedTable,
     },
     Layoutable, Layouted,
@@ -160,8 +160,8 @@ impl LayoutedGlyph for LayoutedSimpleGlyph {
 
         writer.write_u16::<BE>(self.instructions.len() as u16)?;
 
-        for _instruction in self.instructions.iter() {
-            todo!()
+        for instruction in self.instructions.iter() {
+            writer.write_instruction(instruction)?;
         }
 
         // Flags
